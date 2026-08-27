@@ -1,50 +1,61 @@
-# Automate setup
+# Automate setup for BigButtons v0.2
 
-Big Buttons sends an Android broadcast when a button is tapped.
+BigButtons sends Android broadcasts to Automate.
 
-Default values:
+By default every mode uses:
 
 - Broadcast action: `com.bigbuttons.COMMAND`
 - Target package: `com.llamalab.automate`
-- Extra key: `command`
-- Example command: `home`
+- Command extra key: `command`
 
-## Minimal Automate flow
+## Receiver flow
 
-1. Create a new flow in Automate.
-2. Add a **Broadcast receive** block.
-3. Set **Action** to:
+1. Create a flow in Automate.
+2. Add **Broadcast receive**.
+3. Set **Action** to `com.bigbuttons.COMMAND`.
+4. Set **Broadcast extras** output variable to `extras`.
+5. Start the flow and leave it waiting at Broadcast receive.
 
-   `com.bigbuttons.COMMAND`
+The main command is:
 
-4. Set **Broadcast extras** output variable to:
+`extras["command"]`
 
-   `extras`
+BigButtons also sends:
 
-5. The command sent by Big Buttons is then available in Automate as:
+- `extras["source"]` = `bigbuttons`
+- `extras["event_type"]` = `startup` or `button`
+- `extras["mode_index"]`
+- `extras["mode_name"]`
+- `extras["button_index"]` for button events
+- `extras["button_label"]` for button events
 
-   `extras["command"]`
+## Mode startup examples
 
-6. Branch on that value. For example:
+Default startup command names are:
 
-   - `extras["command"] = "home"`
-   - `extras["command"] = "music"`
-   - `extras["command"] = "navigate"`
-   - `extras["command"] = "call"`
-   - `extras["command"] = "gate"`
-   - `extras["command"] = "custom"`
+- Solo Driving: `solo_start`
+- Family: `family_start`
+- Work: `work_start`
 
-7. Loop your flow back to **Broadcast receive** so it waits for the next button press.
+A mode can optionally:
 
-Big Buttons also sends these optional extras:
+1. Open Automate first.
+2. Wait a configurable delay.
+3. Send its startup command.
+4. Return to BigButtons.
 
-- `source` = `bigbuttons`
-- `button_index` = 0 through 5
-- `button_label` = the visible button label
+This is intended to help when Android has stopped or suspended the receiver app.
 
-## Troubleshooting
+Opening Automate does not itself start a stopped Automate flow. Keep the receiver flow running and configure Automate/Android background settings appropriately.
 
-- The Automate flow must be running and waiting at **Broadcast receive**.
-- Leave the default target package as `com.llamalab.automate`.
-- If you intentionally want another receiver app to hear the broadcast, clear the target package field in Big Buttons settings.
-- Make sure the action text matches exactly on both sides.
+## Example branching
+
+Your Automate flow can branch on:
+
+`extras["command"] = "solo_start"`
+
+or:
+
+`extras["command"] = "driving_playlist"`
+
+Then loop back to Broadcast receive after handling the command.

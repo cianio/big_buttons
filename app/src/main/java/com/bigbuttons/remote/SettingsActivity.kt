@@ -2,13 +2,13 @@ package com.bigbuttons.remote
 
 import android.app.Activity
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Switch
@@ -17,22 +17,38 @@ import android.widget.Toast
 
 class SettingsActivity : Activity() {
 
+    private var modeIndex: Int = 0
+
+    private lateinit var nameField: EditText
     private lateinit var actionField: EditText
     private lateinit var extraKeyField: EditText
     private lateinit var packageField: EditText
+
+    private lateinit var startupEnabledSwitch: Switch
+    private lateinit var wakeTargetSwitch: Switch
+    private lateinit var startupDelayField: EditText
+    private lateinit var startupCommandField: EditText
+    private lateinit var returnSwitch: Switch
+
     private lateinit var vibrationSwitch: Switch
     private lateinit var awakeSwitch: Switch
+
     private val labelFields = mutableListOf<EditText>()
     private val commandFields = mutableListOf<EditText>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppPrefs.ensureMigrated(this)
+        modeIndex = AppPrefs.activeModeIndex(this)
         render()
     }
 
     private fun render() {
+        val mode = AppPrefs.mode(this, modeIndex)
+        val global = AppPrefs.global(this)
+
         val scroll = ScrollView(this).apply {
-            setBackgroundColor(Color.rgb(10, 12, 15))
+            setBackgroundColor(AppColors.Background)
         }
 
         val root = LinearLayout(this).apply {
@@ -42,9 +58,9 @@ class SettingsActivity : Activity() {
 
         scroll.addView(
             root,
-            android.widget.FrameLayout.LayoutParams(
-                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
-                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
             ),
         )
 
@@ -52,78 +68,160 @@ class SettingsActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        val title = TextView(this).apply {
-            text = "Edit Big Buttons"
-            makeSectionTitle()
-            textSize = 23f
-        }
-        top.addView(title, LinearLayout.LayoutParams(0, dp(52), 1f))
 
-        val done = Button(this).apply {
+        val titleBlock = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        val eyebrow = TextView(this).apply {
+            text = "EDIT MODE"
+            setTextColor(AppColors.Muted)
+            textSize = 11f
+            letterSpacing = 0.08f
+            setTypeface(typeface, Typeface.BOLD)
+        }
+        titleBlock.addView(eyebrow)
+
+        val title = TextView(this).apply {
+            text = mode.name
+            setTextColor(AppColors.Text)
+            textSize = 23f
+            setTypeface(typeface, Typeface.BOLD)
+            maxLines = 1
+        }
+        titleBlock.addView(title)
+
+        top.addView(
+            titleBlock,
+            LinearLayout.LayoutParams(0, dp(58), 1f),
+        )
+
+        val save = Button(this).apply {
             text = "SAVE"
-            setTextColor(Color.WHITE)
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(35, 118, 92))
+            setTextColor(AppColors.Text)
+            setTypeface(typeface, Typeface.BOLD)
+            isAllCaps = false
+            background = rippleBackground(
+                fillColor = AppColors.AccentDark,
+                radiusDp = 14,
+                strokeColor = AppColors.Accent,
+            )
             setOnClickListener { saveAndFinish() }
         }
-        top.addView(done, LinearLayout.LayoutParams(dp(96), dp(48)))
+        top.addView(
+            save,
+            LinearLayout.LayoutParams(dp(92), dp(46)),
+        )
+
         root.addView(top)
+        root.addView(space(10))
 
-        root.addView(space(8))
-
-        root.addView(sectionTitle("Automate connection"))
-
-        val global = AppPrefs.global(this)
-        actionField = field("Broadcast action", global.action)
-        extraKeyField = field("Command extra key", global.extraKey)
-        packageField = field(
-            "Target package (blank = any app)",
-            global.targetPackage,
+        root.addView(sectionTitle("Mode"))
+        root.addView(
+            sectionCard().apply {
+                nameField = field("Mode name", mode.name)
+                addView(nameField)
+            },
         )
 
-        root.addView(actionField)
-        root.addView(extraKeyField)
-        root.addView(packageField)
+        root.addView(sectionTitle("Receiver"))
+        root.addView(
+            sectionCard().apply {
+                actionField = field(
+                    "Broadcast action",
+                    mode.broadcastAction,
+                )
+                extraKeyField = field(
+                    "Command extra key",
+                    mode.extraKey,
+                )
+                packageField = field(
+                    "Target package",
+                    mode.targetPackage,
+                )
 
-        vibrationSwitch = switchRow(
-            "Vibrate when a command is sent",
-            global.vibration,
+                addView(actionField)
+                addView(extraKeyField)
+                addView(packageField)
+
+                addView(
+                    helperText(
+                        "Default target: com.llamalab.automate. " +
+                            "Leave the package blank to send an untargeted broadcast.",
+                    ),
+                )
+            },
         )
-        awakeSwitch = switchRow(
-            "Keep driving screen awake",
-            global.keepScreenAwake,
+
+        root.addView(sectionTitle("Startup automation"))
+        root.addView(
+            sectionCard().apply {
+                startupEnabledSwitch = switchRow(
+                    "Run startup when this mode opens",
+                    mode.startupEnabled,
+                )
+                wakeTargetSwitch = switchRow(
+                    "Open target app before startup command",
+                    mode.wakeTarget,
+                )
+                startupDelayField = numberField(
+                    "Delay after opening target (ms)",
+                    mode.startupDelayMs.toString(),
+                )
+                startupCommandField = field(
+                    "Startup command",
+                    mode.startupCommand,
+                )
+                returnSwitch = switchRow(
+                    "Return to BigButtons after opening target",
+                    mode.returnToBigButtons,
+                )
+
+                addView(startupEnabledSwitch)
+                addView(wakeTargetSwitch)
+                addView(startupDelayField)
+                addView(startupCommandField)
+                addView(returnSwitch)
+
+                addView(
+                    helperText(
+                        "Example: Solo Driving can open Automate, wait 900 ms, " +
+                            "then send command = solo_start.",
+                    ),
+                )
+            },
         )
 
-        root.addView(vibrationSwitch)
-        root.addView(awakeSwitch)
-
-        val note = TextView(this).apply {
-            text =
-                "Default Automate setup: action com.bigbuttons.COMMAND, " +
-                "extra key command, package com.llamalab.automate."
-            setTextColor(Color.rgb(171, 178, 190))
-            textSize = 13f
-            setPadding(0, dp(6), 0, dp(14))
-        }
-        root.addView(note)
+        root.addView(sectionTitle("Driving screen"))
+        root.addView(
+            sectionCard().apply {
+                vibrationSwitch = switchRow(
+                    "Vibrate when commands are sent",
+                    global.vibration,
+                )
+                awakeSwitch = switchRow(
+                    "Keep the screen awake",
+                    global.keepScreenAwake,
+                )
+                addView(vibrationSwitch)
+                addView(awakeSwitch)
+            },
+        )
 
         root.addView(sectionTitle("Buttons"))
 
         labelFields.clear()
         commandFields.clear()
 
-        AppPrefs.buttons(this).forEachIndexed { index, config ->
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(dp(12), dp(10), dp(12), dp(12))
-                backgroundTintList = null
-                setBackgroundColor(Color.rgb(25, 29, 35))
-            }
+        mode.buttons.forEachIndexed { index, config ->
+            val card = sectionCard()
 
             val cardTitle = TextView(this).apply {
                 text = "Button ${index + 1}"
-                setTextColor(Color.WHITE)
-                textSize = 16f
+                setTextColor(AppColors.Text)
+                textSize = 15f
                 setTypeface(typeface, Typeface.BOLD)
+                setPadding(0, 0, 0, dp(5))
             }
             card.addView(cardTitle)
 
@@ -135,27 +233,23 @@ class SettingsActivity : Activity() {
             card.addView(label)
             card.addView(command)
 
-            root.addView(
-                card,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    bottomMargin = dp(10)
-                },
-            )
+            root.addView(card)
         }
 
         val reset = Button(this).apply {
-            text = "RESET TO DEFAULTS"
+            text = "RESET THIS MODE"
             isAllCaps = false
-            setTextColor(Color.WHITE)
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(112, 49, 49))
+            setTextColor(AppColors.Text)
+            setTypeface(typeface, Typeface.BOLD)
+            background = rippleBackground(
+                fillColor = AppColors.Danger,
+                radiusDp = 16,
+            )
             setOnClickListener {
-                AppPrefs.reset(this@SettingsActivity)
+                AppPrefs.resetMode(this@SettingsActivity, modeIndex)
                 Toast.makeText(
                     this@SettingsActivity,
-                    "Defaults restored",
+                    "Mode reset",
                     Toast.LENGTH_SHORT,
                 ).show()
                 render()
@@ -177,42 +271,60 @@ class SettingsActivity : Activity() {
     }
 
     private fun saveAndFinish() {
+        val name = nameField.text.toString().trim()
         val action = actionField.text.toString().trim()
-        val key = extraKeyField.text.toString().trim()
+        val extraKey = extraKeyField.text.toString().trim()
+        val startupDelay =
+            startupDelayField.text.toString().trim().toIntOrNull()
+                ?.coerceIn(0, 5000)
+                ?: 900
 
+        if (name.isBlank()) {
+            nameField.error = "Mode name is required"
+            return
+        }
         if (action.isBlank()) {
             actionField.error = "Broadcast action is required"
             return
         }
-        if (key.isBlank()) {
+        if (extraKey.isBlank()) {
             extraKeyField.error = "Extra key is required"
             return
         }
 
+        val buttons = labelFields.indices.map { index ->
+            BigButtonConfig(
+                label = labelFields[index].text.toString().trim()
+                    .ifBlank { "Button ${index + 1}" },
+                command = commandFields[index].text.toString().trim(),
+            )
+        }
+
+        AppPrefs.saveMode(
+            this,
+            modeIndex,
+            ModeConfig(
+                name = name,
+                broadcastAction = action,
+                extraKey = extraKey,
+                targetPackage = packageField.text.toString().trim(),
+                startupEnabled = startupEnabledSwitch.isChecked,
+                wakeTarget = wakeTargetSwitch.isChecked,
+                startupDelayMs = startupDelay,
+                startupCommand =
+                    startupCommandField.text.toString().trim(),
+                returnToBigButtons = returnSwitch.isChecked,
+                buttons = buttons,
+            ),
+        )
+
         AppPrefs.saveGlobal(
             this,
             GlobalConfig(
-                action = action,
-                extraKey = key,
-                targetPackage = packageField.text.toString().trim(),
                 vibration = vibrationSwitch.isChecked,
                 keepScreenAwake = awakeSwitch.isChecked,
             ),
         )
-
-        labelFields.indices.forEach { index ->
-            val label = labelFields[index].text.toString().trim()
-            val command = commandFields[index].text.toString().trim()
-
-            AppPrefs.saveButton(
-                this,
-                index,
-                BigButtonConfig(
-                    label = label.ifBlank { "BUTTON ${index + 1}" },
-                    command = command,
-                ),
-            )
-        }
 
         Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
         finish()
@@ -222,40 +334,70 @@ class SettingsActivity : Activity() {
         TextView(this).apply {
             this.text = text
             makeSectionTitle()
-            setPadding(0, dp(8), 0, dp(8))
+            setPadding(0, dp(12), 0, dp(7))
+        }
+
+    private fun sectionCard(): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(14), dp(12), dp(14), dp(12))
+            background = roundedBackground(
+                fillColor = AppColors.Surface,
+                radiusDp = 18,
+                strokeColor = AppColors.Border,
+            )
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                bottomMargin = dp(10)
+            }
         }
 
     private fun field(hint: String, value: String): EditText =
         EditText(this).apply {
             this.hint = hint
             setText(value)
-            setTextColor(Color.WHITE)
-            setHintTextColor(Color.rgb(135, 143, 155))
+            setTextColor(AppColors.Text)
+            setHintTextColor(AppColors.Muted)
             textSize = 16f
             inputType =
                 InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+                    InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             setSingleLine(true)
-            setPadding(dp(12), dp(8), dp(12), dp(8))
-            backgroundTintList = ColorStateList.valueOf(Color.rgb(155, 164, 180))
+            setPadding(dp(10), dp(7), dp(10), dp(7))
+            backgroundTintList = ColorStateList.valueOf(AppColors.Muted)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(58),
+                dp(56),
             ).apply {
-                bottomMargin = dp(6)
+                bottomMargin = dp(5)
             }
+        }
+
+    private fun numberField(hint: String, value: String): EditText =
+        field(hint, value).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
         }
 
     private fun switchRow(label: String, checked: Boolean): Switch =
         Switch(this).apply {
             text = label
             isChecked = checked
-            setTextColor(Color.WHITE)
-            textSize = 16f
-            setPadding(0, dp(4), 0, dp(4))
+            setTextColor(AppColors.Text)
+            textSize = 15f
+            setPadding(0, dp(5), 0, dp(5))
         }
 
-    private fun space(heightDp: Int) =
+    private fun helperText(text: String): TextView =
+        TextView(this).apply {
+            this.text = text
+            setTextColor(AppColors.Muted)
+            textSize = 13f
+            setPadding(0, dp(6), 0, 0)
+        }
+
+    private fun space(heightDp: Int): TextView =
         TextView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,

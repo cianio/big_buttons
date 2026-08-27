@@ -1,100 +1,89 @@
-# Big Buttons
+# BigButtons v0.2
 
-A deliberately simple Android "driving remote": six enormous configurable buttons that send command strings to **Automate** (or another Android broadcast receiver).
+BigButtons is a configurable Android control surface designed around large, low-distraction buttons.
 
-The point is not to duplicate Automate. Big Buttons is the low-distraction front end; Automate does the powerful automation behind it.
+It works especially well as a front end for LlamaLab Automate, but the broadcast receiver is configurable.
 
-## V1 features
+## v0.2 highlights
 
-- Six huge buttons
-- Portrait layout: 2 × 3
-- Landscape layout: 3 × 2
-- Custom label for every button
-- Custom command string for every button
-- Configurable broadcast action
-- Configurable broadcast extra key
-- Configurable target package
-- Defaults configured for LlamaLab Automate
-- Short vibration acknowledgement
-- Optional keep-screen-awake mode
-- Separate edit screen
-- No internet permission
-- No account
-- No analytics
-- No Android Studio required to build with GitHub Actions
+### Modes
 
-## Default broadcast
+Three independent modes are included by default:
 
-When the HOME button is tapped, the app sends approximately:
+- Solo Driving
+- Family
+- Work
+
+Each mode has:
+
+- its own name
+- six button labels
+- six command strings
+- its own broadcast action
+- its own target package
+- its own startup command
+- its own target-app wake setting
+- its own startup delay
+- an option to return to BigButtons after waking the target
+
+### Startup automation
+
+A mode can automatically run this sequence when BigButtons opens in that mode or when you switch to it:
 
 ```text
-Action:  com.bigbuttons.COMMAND
-Package: com.llamalab.automate
-
-Extras:
-command      = "home"
-source       = "bigbuttons"
-button_index = 0
-button_label = "🏠 HOME"
+Open target app
+    ->
+wait
+    ->
+send startup broadcast
+    ->
+return to BigButtons
 ```
 
-See `AUTOMATE_SETUP.md` for the Automate side.
+For example, Solo Driving can open Automate, wait 900 ms and send:
 
-## Build the APK on GitHub
-
-1. Create a new GitHub repository.
-2. Upload/push all the files in this project.
-3. Open the repository's **Actions** tab.
-4. Open **Build Android APK**.
-5. Wait for the build to finish.
-6. Open the completed workflow run.
-7. Under **Artifacts**, download `BigButtons-debug-apk`.
-8. Unzip it and install `app-debug.apk` on your Android phone.
-
-Android may ask you to allow installation from your browser/file manager because this is a sideloaded debug build.
-
-The workflow can also be started manually using **Actions → Build Android APK → Run workflow**.
-
-## Toolchain
-
-The GitHub workflow uses:
-
-- Java 17
-- Android SDK / compileSdk 36
-- Android Build Tools 36.0.0
-- Android Gradle Plugin 9.3.0
-- Gradle 9.5.0
-
-The app has `minSdk = 26` (Android 8.0+) and `targetSdk = 36`.
-
-## Local build (optional)
-
-You do not need this for the GitHub workflow.
-
-If you later install the Android SDK and Gradle 9.5 locally:
-
-```bash
-gradle :app:assembleDebug
+```text
+command = solo_start
 ```
 
-The APK will be at:
+Automate can then perform the real car setup.
+
+### Interface refresh
+
+v0.2 has a cleaner dark interface with rounded surfaces, a visible active-mode header and a dedicated mode picker.
+
+The default UI uses text labels only. No emoji labels are used.
+
+### v0.1 migration
+
+If v0.2 is installed over v0.1 using the same package/signing key, existing v0.1 button labels, commands and receiver settings are migrated into the Solo Driving mode.
+
+For existing v0.1 users, Solo Driving startup is enabled during migration so the new wake-and-start workflow can be tested immediately.
+
+## GitHub APK build
+
+Push the project to GitHub. The included workflow builds:
 
 ```text
 app/build/outputs/apk/debug/app-debug.apk
 ```
 
-## Safety / driving note
+Open:
 
-The UI is intentionally designed around large touch targets and minimal interaction. Configure the buttons while parked. Do not use actions that require reading, typing, or complex interaction while driving.
+Actions -> Build Android APK -> latest successful run -> Artifacts
 
-## Possible V2 features
+Download `BigButtons-debug-apk`, unzip it and install the APK.
 
-- More/fewer buttons
-- Per-button colours
-- Multiple pages
-- Long-press actions
-- Button icons
-- Spoken acknowledgement
-- Intent/URI modes in addition to broadcasts
-- "Driving lock" to hide all editing controls
-- Import/export configuration
+## Current limits
+
+v0.2 intentionally does not yet include:
+
+- custom button images
+- custom button colours
+- arbitrary numbers of modes
+- arbitrary startup action sequences
+- signed release builds
+- profile import/export
+- Material 3 / Jetpack Compose dependencies
+
+Those are better candidates for later versions after the modes architecture has been tested in real use.
