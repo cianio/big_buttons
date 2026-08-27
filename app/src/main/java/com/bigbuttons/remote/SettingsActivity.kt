@@ -1,7 +1,7 @@
 package com.bigbuttons.remote
 
 import android.app.Activity
-import android.content.ColorStateList
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -42,9 +42,9 @@ class SettingsActivity : Activity() {
 
         scroll.addView(
             root,
-            ScrollView.LayoutParams(
-                ScrollView.LayoutParams.MATCH_PARENT,
-                ScrollView.LayoutParams.WRAP_CONTENT,
+            android.widget.FrameLayout.LayoutParams(
+                android.widget.FrameLayout.LayoutParams.MATCH_PARENT,
+                android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
             ),
         )
 

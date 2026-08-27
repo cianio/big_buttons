@@ -98,4 +98,3 @@ The UI is intentionally designed around large touch targets and minimal interact
 - Intent/URI modes in addition to broadcasts
 - "Driving lock" to hide all editing controls
 - Import/export configuration
-# big_buttons
