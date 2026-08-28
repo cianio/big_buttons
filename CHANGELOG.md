@@ -1,23 +1,16 @@
 # Changelog
 
+## 0.3.0
+- Added pages within modes.
+- Added Send command / Open page / Go back actions.
+- Added visual page editor.
+- Added v0.2 -> v0.3 migration into each mode's Main page.
+- Removed ACTIVE MODE and successful Sent status text.
+- Replaced EDIT with a settings cog and made mode title open the picker.
+- Added Automate integration preset, instructions, and test command.
+- Added clearer startup field labels/helper text.
+- Added launcher icon.
+- Added persistent development debug signing.
+
 ## 0.2.0
-
-- Added three independent modes: Solo Driving, Family and Work.
-- Added a mode picker.
-- Added separate button labels and commands per mode.
-- Added per-mode broadcast receiver configuration.
-- Added optional per-mode startup automation.
-- Startup can open the target app, wait, send a startup command and return to BigButtons.
-- Added startup/button event metadata to broadcasts.
-- Added migration of v0.1 settings into Solo Driving.
-- Refreshed the UI with a cleaner dark, rounded design.
-- Removed emoji from all default button labels and mode UI.
-- Preserved vibration and keep-screen-awake settings.
-
-## 0.1.1
-
-- Fixed initial Android compilation errors.
-
-## 0.1.0
-
-- Initial six-button broadcast remote.
+- Added modes and per-mode startup automation.

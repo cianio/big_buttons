@@ -1,61 +1,16 @@
-# Automate setup for BigButtons v0.2
+# Automate setup
 
-BigButtons sends Android broadcasts to Automate.
+In BigButtons, enable **Use Automate integration**.
 
-By default every mode uses:
+In Automate:
 
-- Broadcast action: `com.bigbuttons.COMMAND`
-- Target package: `com.llamalab.automate`
-- Command extra key: `command`
+1. Add **Broadcast receive**.
+2. Set Action to `com.bigbuttons.COMMAND`.
+3. Set Broadcast extras output to `extras`.
+4. Start the flow.
 
-## Receiver flow
+The command is `extras["command"]`.
 
-1. Create a flow in Automate.
-2. Add **Broadcast receive**.
-3. Set **Action** to `com.bigbuttons.COMMAND`.
-4. Set **Broadcast extras** output variable to `extras`.
-5. Start the flow and leave it waiting at Broadcast receive.
+BigButtons also sends `source`, `event_type`, `mode_index`, `mode_name`, and for button events `button_index` and `button_label`.
 
-The main command is:
-
-`extras["command"]`
-
-BigButtons also sends:
-
-- `extras["source"]` = `bigbuttons`
-- `extras["event_type"]` = `startup` or `button`
-- `extras["mode_index"]`
-- `extras["mode_name"]`
-- `extras["button_index"]` for button events
-- `extras["button_label"]` for button events
-
-## Mode startup examples
-
-Default startup command names are:
-
-- Solo Driving: `solo_start`
-- Family: `family_start`
-- Work: `work_start`
-
-A mode can optionally:
-
-1. Open Automate first.
-2. Wait a configurable delay.
-3. Send its startup command.
-4. Return to BigButtons.
-
-This is intended to help when Android has stopped or suspended the receiver app.
-
-Opening Automate does not itself start a stopped Automate flow. Keep the receiver flow running and configure Automate/Android background settings appropriately.
-
-## Example branching
-
-Your Automate flow can branch on:
-
-`extras["command"] = "solo_start"`
-
-or:
-
-`extras["command"] = "driving_playlist"`
-
-Then loop back to Broadcast receive after handling the command.
+To test, connect Broadcast receive to Toast show with `extras["command"]`, then use BigButtons Settings -> Automate setup instructions -> **SEND TEST**. You should see `bigbuttons_test`.
